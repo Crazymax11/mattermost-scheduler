@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 module.exports = function createMattermostMessagerEndpoint({ sendMattermostMessage }) {
   const router = express.Router();
   router.use(bodyParser.json());
+
   router.post('/', async (req, res) => {
     const {
       url, text, iconUrl, username, channel,
