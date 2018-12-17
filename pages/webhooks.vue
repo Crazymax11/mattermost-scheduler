@@ -2,6 +2,16 @@
   <v-app>
     <v-content>
       <v-container fluid>
+        <v-list>
+          <v-list-tile
+            v-for="webhookName in webhooksNames"
+            :key="webhookName">
+            <v-list-tile-content>
+              <v-list-tile-title v-text="webhookName"/>
+              <v-list-tile-sub-title>{{ webhooks[webhookName].url }}</v-list-tile-sub-title>
+            </v-list-tile-content>
+          </v-list-tile>
+        </v-list>
         <v-alert
           :value="error"
           color="error"
@@ -14,8 +24,8 @@
           v-model="valid" >
 
           <v-text-field
-            v-model="text"
-            :rules="[v => !!v || 'text is required']"
+            v-model="name"
+            :rules="[v => !!v || 'name is required']"
             :disabled="loading"
             label="text"
             required
@@ -27,36 +37,13 @@
             label="webhook url"
             required
           />
-          <v-text-field
-            v-model="channel"
-            :disabled="loading"
-            label="channel"
-          />
-          <v-text-field
-            v-model="username"
-            :disabled="loading"
-            label="username"
-          />
-          <v-text-field
-            v-model="iconUrl"
-            :disabled="loading"
-            label="iconUrl"
-          />
-          <v-avatar
-            :tile="true"
-            :size="128"
-          >
-            <img
-              :src="iconUrl || '/mattermost.png'"
-              alt="avatar">
-          </v-avatar>
           <v-btn
             :disabled="!valid"
             :loading="loading"
             color="success"
             @click="submit"
           >
-            send
+            create
           </v-btn>
         </v-form>
       </v-container>
@@ -70,28 +57,36 @@ import _ from 'lodash';
 export default {
   data() {
     return {
-      text: '',
+      name: '',
       url: '',
-      iconUrl: '',
-      channel: '',
-      username: '',
       valid: false,
       loading: false,
       error: '',
+      webhooks: {},
     };
+  },
+  ready() {
+    axios.get('/api/v1/webhooks').then(({ data: webhooks }) => {
+      this.webhooks = webhooks;
+    });
+  },
+  computed: {
+    webhooksNames() {
+      return _.keys(this.webhooks);
+    },
   },
   methods: {
     submit() {
       if (this.$refs.form.validate()) {
         this.loading = true;
-        axios.post('/api/v1/messages', {
-          text: this.text,
-          iconUrl: this.iconUrl,
-          username: this.username,
+        axios.post('/api/v1/webhooks', {
+          name: this.name,
           url: this.url,
-          channel: this.channel,
         }).catch((err) => { this.error = _.get(err, 'response.data', err.message); }).then(() => {
           this.loading = false;
+          axios.get('/api/v1/webhooks').then(({ data: webhooks }) => {
+            this.webhooks = webhooks;
+          });
         });
       }
     },
